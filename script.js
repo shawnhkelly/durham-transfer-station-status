@@ -1,5 +1,5 @@
 function isTransferStationOpen() {
-    //  const now = new Date('2024-09-19T10:00:00'); // Testing - Simulate September 14, 2024, at 10:00 AM
+    //  const now = new Date('2024-09-28T10:00:00'); // Testing - Simulate September 28, 2024, at 10:00 AM
     const now = new Date();
     const currentYear = now.getFullYear();
     const today = new Date(currentYear, now.getMonth(), now.getDate()); // Normalize to midnight
@@ -19,7 +19,7 @@ function isTransferStationOpen() {
         // Christmas Day (December 25th)
         new Date(currentYear, 11, 25),
         // Durham Fair Saturday (Update this date annually)
-        new Date(currentYear, 8, 21), // September 21st
+        new Date(currentYear, 8, 28), // September 28th
     ];
 
     // Check if today is a holiday
