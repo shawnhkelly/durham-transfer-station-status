@@ -21,6 +21,7 @@ body, html {
     width: 100%;
     height: calc(100% - 2.5rem); /* Adjust height to leave space for the footer */
     display: flex;
+    flex-direction: column; /* Ensure children are stacked vertically */
     align-items: center;
     justify-content: center;
     transition: background-color 0.5s ease;
@@ -53,6 +54,19 @@ body.closed {
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
+}
+
+/* Style for #status */
+#status {
+    /* Ensure that the status text ("YES" or "NO") is displayed as a block */
+    display: block;
+}
+
+/* Style for #next-open */
+#next-open {
+    margin-top: 1rem;
+    font-size: 1rem;
+    color: white;
 }
 
 /* Footer styling */

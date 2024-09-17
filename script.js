@@ -1,5 +1,5 @@
 function isTransferStationOpen() {
-    //  const now = new Date('2024-09-14T10:00:00'); // Testing - Simulate September 14, 2024, at 10:00 AM
+    //  const now = new Date('2024-09-19T10:00:00'); // Testing - Simulate September 14, 2024, at 10:00 AM
     const now = new Date();
     const currentYear = now.getFullYear();
     const today = new Date(currentYear, now.getMonth(), now.getDate()); // Normalize to midnight
@@ -18,7 +18,7 @@ function isTransferStationOpen() {
         getNthWeekdayOfMonth(currentYear, 10, 4, 4), // November, 4th Thursday
         // Christmas Day (December 25th)
         new Date(currentYear, 11, 25),
-        // Durham Fair Saturday (Assumed date for this year)
+        // Durham Fair Saturday (Update this date annually)
         new Date(currentYear, 8, 21), // September 21st
     ];
 
@@ -48,7 +48,7 @@ function isTransferStationOpen() {
 
     // If today is a holiday and not the special half-day Saturday, return "NO"
     if ((isHolidayToday || isMondayAfterSundayHoliday) && !isSpecialHalfDaySaturday) {
-        return "NO";
+        return { status: "NO", nextOpen: getNextOpenTime(now, holidays) };
     }
 
     // Define opening hours
@@ -71,17 +71,72 @@ function isTransferStationOpen() {
         }
     } else {
         // Transfer Station is closed on other days
-        return "NO";
+        return { status: "NO", nextOpen: getNextOpenTime(now, holidays) };
     }
 
     // Check if current time is within operating hours
     if (now >= openingTime && now <= closingTime) {
-        return "YES";
+        return { status: "YES" };
     } else {
-        return "NO";
+        return { status: "NO", nextOpen: getNextOpenTime(now, holidays) };
     }
 }
 
+// Function to get the next opening time
+function getNextOpenTime(now, holidays) {
+    const currentYear = now.getFullYear();
+    let nextOpenDate = new Date(now);
+    for (let i = 0; i < 14; i++) { // Check the next two weeks
+        nextOpenDate = addDays(nextOpenDate, 1);
+        const dayOfWeek = nextOpenDate.getDay();
+        const date = new Date(currentYear, nextOpenDate.getMonth(), nextOpenDate.getDate()); // Normalize to midnight
+
+        let isHoliday = holidays.some(holiday => isSameDate(holiday, date));
+        let isMondayAfterSundayHoliday = holidays.some(holiday => {
+            return holiday.getDay() === 0 && isSameDate(addDays(holiday, 1), date);
+        });
+
+        let isSpecialHalfDaySaturday = false;
+        holidays.forEach(holiday => {
+            if (
+                (holiday.getMonth() === 0 && holiday.getDate() === 1) || // New Year's Day
+                (holiday.getMonth() === 11 && holiday.getDate() === 25)   // Christmas Day
+            ) {
+                if (holiday.getDay() === 0) { // If holiday falls on Sunday
+                    const saturdayBefore = addDays(holiday, -1);
+                    if (isSameDate(saturdayBefore, date) && date.getDay() === 6) {
+                        isSpecialHalfDaySaturday = true;
+                    }
+                }
+            }
+        });
+
+        if ((isHoliday || isMondayAfterSundayHoliday) && !isSpecialHalfDaySaturday) {
+            continue; // Closed due to holiday
+        }
+
+        let openingTime, closingTime;
+
+        if (dayOfWeek === 1) { // Monday
+            openingTime = setTime(date, 8, 0);
+            return openingTime;
+        } else if (dayOfWeek === 4) { // Thursday
+            openingTime = setTime(date, 8, 0);
+            return openingTime;
+        } else if (dayOfWeek === 6) { // Saturday
+            if (isSpecialHalfDaySaturday) {
+                openingTime = setTime(date, 8, 0);
+                return openingTime;
+            } else {
+                openingTime = setTime(date, 8, 0);
+                return openingTime;
+            }
+        }
+    }
+    return null; // Could not find the next opening time in the next two weeks
+}
+
+// Helper functions (remain the same)
 // Helper functions
 
 function getLastMondayOfMonth(year, month) {
@@ -133,17 +188,29 @@ function setTime(date, hours, minutes) {
     return result;
 }
 
+
 // DOM Manipulation
 document.addEventListener("DOMContentLoaded", function() {
-    const status = isTransferStationOpen();
+    const result = isTransferStationOpen();
     const statusElement = document.getElementById('status');
-    statusElement.innerText = status;
+    statusElement.innerText = result.status;
 
-    if (status === "YES") {
+    if (result.status === "YES") {
         document.body.classList.add('open');
         document.querySelector('.container').classList.add('open');
     } else {
         document.body.classList.add('closed');
         document.querySelector('.container').classList.add('closed');
+
+        // Display next opening time
+        if (result.nextOpen) {
+            const nextOpenElement = document.createElement('div');
+            nextOpenElement.id = 'next-open';
+            const options = { weekday: 'long', hour: 'numeric', minute: 'numeric' };
+            const nextOpenTimeString = result.nextOpen.toLocaleString('en-US', options);
+            nextOpenElement.innerText = `The transfer station will next open on ${nextOpenTimeString}.`;
+            // Append the nextOpenElement **after** the statusElement
+            statusElement.insertAdjacentElement('afterend', nextOpenElement);
+        }
     }
 });
