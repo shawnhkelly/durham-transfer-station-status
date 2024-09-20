@@ -29,12 +29,12 @@ body, html {
 
 /* Open state styling */
 .open {
-    background-color: #4CAF50; /* Green color */
+    background-color: #006400; /* Green color */
 }
 
 /* Closed state styling */
 .closed {
-    background-color: #f44336; /* Red color */
+    background-color: #8b0000; /* Red color */
 }
 
 /* Animation for transitions */
@@ -44,11 +44,11 @@ body, html {
 
 /* Match body background color with container */
 body.open {
-    background-color: #4CAF50; /* Green color */
+    background-color: #006400; /* Green color */
 }
 
 body.closed {
-    background-color: #f44336; /* Red color */
+    background-color: #8b0000; /* Red color */
 }
 
 @keyframes fadeIn {
@@ -67,6 +67,34 @@ body.closed {
     margin-top: 1rem;
     font-size: 1rem;
     color: white;
+    padding-left: 2rem;
+    padding-right: 2rem;
+}
+
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: #000;
+    color: #fff;
+    padding: 8px;
+    z-index: 100;
+}
+
+.skip-link:focus {
+    top: 0;
+}
+
+.visually-hidden {
+    position: absolute !important;
+    width: 1px; 
+    height: 1px; 
+    padding: 0; 
+    margin: -1px; 
+    overflow: hidden; 
+    clip: rect(0, 0, 0, 0); 
+    white-space: nowrap; 
+    border: 0;
 }
 
 /* Footer styling */
@@ -81,6 +109,11 @@ body.closed {
     padding: 0.5rem;
     background-color: #f1f1f1; /* Light background for footer */
     border-top: 1px solid #ddd; /* Light border for separation */
+}
+
+footer p {
+    padding-left: 1rem;
+    padding-right: 1rem;
 }
 
 /* Responsive design */

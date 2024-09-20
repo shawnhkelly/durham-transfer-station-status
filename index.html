@@ -14,14 +14,21 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <div id="status"></div>
-    </div>
+    <a href="#status" class="skip-link">Skip to main content</a>
+    <header>
+        <h1 class="visually-hidden">Is the Durham Transfer Station Open Today?</h1>
+    </header>
+    <main role="main">
+        <div class="container">
+            <div id="status" aria-live="polite"></div>
+            <!-- Next open message will be inserted here -->
+        </div>
+    </main>
     <footer class="footer">
-        For detailed information and official announcements, visit the town website at 
-        <a href="https://www.townofdurhamct.org/entities/transfer-station-b212a" target="_blank" rel="noopener noreferrer">
-            Town of Durham CT Transfer Station
-        </a>.
+        <p>
+            Not affiliated with the Town of Durham. For official information, visit the 
+            <a href="https://www.townofdurhamct.org/" target="_blank" rel="noopener noreferrer">Town of Durham Website</a>.
+        </p>
     </footer>
     <!-- Load script.js before calling the function -->
     <script src="script.js"></script>
