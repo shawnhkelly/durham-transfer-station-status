@@ -1,8 +1,8 @@
 // Main Function to Determine if Transfer Station is Open
 function isTransferStationOpen() {
     // Uncomment the line below to test with a specific date and time
-    const now = new Date('2024-10-13T10:00:00'); // Testing - Simulate October 15, 2024, at 10:00 AM
-    //  const now = new Date();
+    //  const now = new Date('2024-10-13T10:00:00'); // Testing - Simulate October 15, 2024, at 10:00 AM
+    const now = new Date();
     const currentYear = now.getFullYear();
     const today = new Date(currentYear, now.getMonth(), now.getDate()); // Normalize to midnight
 
