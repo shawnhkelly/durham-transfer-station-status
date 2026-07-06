@@ -2,26 +2,35 @@
 body, html {
     margin: 0;
     padding: 0;
-    height: 100%;
+    min-height: 100%;
     width: 100%;
     font-family: 'Roboto', sans-serif;
+    transition: background-color 0.5s ease;
+}
+
+body {
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.5s ease;
+    align-items: stretch;
+}
+
+main {
+    width: 100%;
+    flex: 1;
 }
 
 /* Styling for the container */
 .container {
     text-align: center;
-    font-size: 8rem;
     font-weight: bold;
     color: white;
     width: 100%;
-    height: calc(100% - 2.5rem); /* Adjust height to leave space for the footer */
+    min-height: calc(100vh - 4rem); /* Adjust height to leave space for the footer */
+    padding: 2rem 1rem 5rem;
+    box-sizing: border-box;
     display: flex;
-    flex-direction: column; /* Ensure children are stacked vertically */
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     transition: background-color 0.5s ease;
@@ -58,17 +67,83 @@ body.closed {
 
 /* Style for #status */
 #status {
-    /* Ensure that the status text ("YES" or "NO") is displayed as a block */
     display: block;
+    font-size: 8rem;
+    line-height: 1;
+    margin: 0.75rem 0;
 }
 
 /* Style for #next-open */
 #next-open {
-    margin-top: 1rem;
+    min-height: 1.25rem;
+    margin-bottom: 1.25rem;
     font-size: 1rem;
+    font-weight: 600;
     color: white;
     padding-left: 2rem;
     padding-right: 2rem;
+}
+
+.date-checker {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+.date-checker label {
+    font-weight: 600;
+}
+
+.date-checker input {
+    font: inherit;
+    color: #111;
+    border: 2px solid rgba(255, 255, 255, 0.85);
+    border-radius: 6px;
+    padding: 0.45rem 0.6rem;
+    background: #fff;
+}
+
+.outlook {
+    width: min(100%, 28rem);
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.outlook h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+}
+
+#outlook-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.25rem;
+}
+
+#outlook-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.35rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.outlook-date {
+    text-align: left;
+}
+
+.outlook-status {
+    text-align: right;
+}
+
+.open-day,
+.closed-day {
+    color: white;
 }
 
 .skip-link {
@@ -101,12 +176,10 @@ body.closed {
 .footer {
     font-size: 0.75rem; /* Smaller font size */
     color: #666; /* Slightly lighter color for readability */
-    position: fixed;
-    bottom: 0;
-    left: 0;
     width: 100%;
     text-align: center;
     padding: 0.5rem;
+    box-sizing: border-box;
     background-color: #f1f1f1; /* Light background for footer */
     border-top: 1px solid #ddd; /* Light border for separation */
 }
@@ -118,7 +191,16 @@ footer p {
 
 /* Responsive design */
 @media (max-width: 768px) {
-    .container {
+    #status {
         font-size: 4rem; /* Adjust font size for smaller screens */
+    }
+
+    .container {
+        justify-content: flex-start;
+        padding-top: 2.5rem;
+    }
+
+    #outlook-list li {
+        gap: 0.75rem;
     }
 }

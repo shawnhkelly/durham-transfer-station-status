@@ -1,165 +1,165 @@
-// Main Function to Determine if Transfer Station is Open
-function isTransferStationOpen() {
-    // Uncomment the line below to test with a specific date and time
-    //  const now = new Date('2024-10-13T10:00:00'); // Testing - Simulate October 15, 2024, at 10:00 AM
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const today = new Date(currentYear, now.getMonth(), now.getDate()); // Normalize to midnight
+const NORMAL_OPERATING_DAYS = [1, 4, 6]; // Monday, Thursday, Saturday
 
-    // Compute holidays
-    const holidays = [
-        // New Year's Day (January 1st)
-        new Date(currentYear, 0, 1),
-        // Memorial Day (last Monday in May)
-        getLastMondayOfMonth(currentYear, 4), // May is month 4 (zero-based)
-        // Independence Day (July 4th)
-        new Date(currentYear, 6, 4),
-        // Labor Day (first Monday in September)
-        getFirstMondayOfMonth(currentYear, 8), // September is month 8
-        // Indigenous People's Day (second Monday in October)
-        getNthWeekdayOfMonth(currentYear, 9, 1, 2), // October is month 9, Monday is weekday 1
-        // Thanksgiving Day (fourth Thursday in November)
-        getNthWeekdayOfMonth(currentYear, 10, 4, 4), // November is month 10, Thursday is weekday 4
-        // Christmas Day (December 25th)
-        new Date(currentYear, 11, 25),
-        // Durham Fair Saturday (Update this date annually)
-        new Date(currentYear, 8, 28), // September 28th
-    ];
+// Main function to determine if the Transfer Station is open.
+function isTransferStationOpen(targetDate = new Date(), now = new Date()) {
+    const selectedDate = startOfDay(targetDate);
+    const today = startOfDay(now);
+    const schedule = getScheduleForDate(selectedDate);
+    const isToday = isSameDate(selectedDate, today);
 
-    // Define normal operating days: Monday (1), Thursday (4), Saturday (6)
-    const normalOperatingDays = [1, 4, 6];
-
-    // Check if today is a holiday
-    let isHolidayToday = holidays.some(holiday => isSameDate(holiday, today));
-
-    // Check if any holiday falls on a Sunday and today is the following Monday
-    let isMondayAfterSundayHoliday = holidays.some(holiday => {
-        return holiday.getDay() === 0 && isSameDate(addDays(holiday, 1), today);
-    });
-
-    // Check for special half-day on Saturday before Christmas or New Year's Day if they fall on Sunday
-    let isSpecialHalfDaySaturday = false;
-    holidays.forEach(holiday => {
-        if (
-            (holiday.getMonth() === 0 && holiday.getDate() === 1) || // New Year's Day
-            (holiday.getMonth() === 11 && holiday.getDate() === 25)   // Christmas Day
-        ) {
-            if (holiday.getDay() === 0) { // If holiday falls on Sunday
-                const saturdayBefore = addDays(holiday, -1);
-                if (isSameDate(saturdayBefore, today) && today.getDay() === 6) {
-                    isSpecialHalfDaySaturday = true;
-                }
-            }
-        }
-    });
-
-    // Check if today is the Tuesday after Indigenous People's Day
-    const indigenousPeoplesDay = getNthWeekdayOfMonth(currentYear, 9, 1, 2); // Second Monday in October
-    let isTuesdayAfterIndigenousPeoplesDay = isSameDate(addDays(indigenousPeoplesDay, 1), today) && today.getDay() === 2;
-
-    // If today is a holiday and a normal operating day, it's closed today
-    if ((isHolidayToday || isMondayAfterSundayHoliday) && normalOperatingDays.includes(today.getDay())) {
-        return { status: "NO", nextOpen: getNextOpenTime(now, holidays) };
+    if (!schedule) {
+        return {
+            status: "NO",
+            isOpen: false,
+            schedule,
+            nextOpen: getNextOpenTime(isToday ? now : selectedDate)
+        };
     }
 
-    // Define opening hours
-    const dayOfWeek = now.getDay(); // Sunday = 0, Monday = 1, ..., Saturday = 6
-    let openingTime, closingTime;
-
-    if (normalOperatingDays.includes(dayOfWeek) || isTuesdayAfterIndigenousPeoplesDay) {
-        // Determine opening and closing times based on the day
-        if (dayOfWeek === 1) { // Monday
-            openingTime = setTime(today, 8, 0);
-            closingTime = setTime(today, 19, 45);
-        } else if (dayOfWeek === 4) { // Thursday
-            openingTime = setTime(today, 8, 0);
-            closingTime = setTime(today, 19, 45);
-        } else if (dayOfWeek === 6) { // Saturday
-            if (isSpecialHalfDaySaturday) {
-                openingTime = setTime(today, 8, 0);
-                closingTime = setTime(today, 12, 0);
-            } else {
-                openingTime = setTime(today, 8, 0);
-                closingTime = setTime(today, 15, 0);
-            }
-        } else if (isTuesdayAfterIndigenousPeoplesDay) { // Special case for Tuesday after Indigenous People's Day
-            openingTime = setTime(today, 8, 0);
-            closingTime = setTime(today, 19, 45); // Using Monday's hours
-        } else {
-            // Transfer Station is closed on other days
-            return { status: "NO", nextOpen: getNextOpenTime(now, holidays) };
-        }
-    } else {
-        // Transfer Station is closed on other days
-        return { status: "NO", nextOpen: getNextOpenTime(now, holidays) };
+    if (!isToday) {
+        return {
+            status: "YES",
+            isOpen: true,
+            schedule
+        };
     }
 
-    // Check if current time is within operating hours
-    if (now >= openingTime && now <= closingTime) {
-        return { status: "YES" };
-    } else {
-        return { status: "NO", nextOpen: getNextOpenTime(now, holidays) };
-    }
+    const isOpenNow = now >= schedule.openingTime && now <= schedule.closingTime;
+
+    return {
+        status: isOpenNow ? "YES" : "NO",
+        isOpen: isOpenNow,
+        schedule,
+        nextOpen: isOpenNow ? null : getNextOpenTime(now)
+    };
 }
 
-// Function to get the next opening time
-function getNextOpenTime(now, holidays) {
-    const currentYear = now.getFullYear();
-    let nextOpenDate = new Date(now);
-    const normalOperatingDays = [1, 4, 6]; // Monday, Thursday, Saturday
+function getScheduleForDate(date) {
+    const targetDate = startOfDay(date);
+    const dayOfWeek = targetDate.getDay();
+    const isTuesdayAfterIndigenousPeoplesDay = isTuesdayAfterHoliday(targetDate, getIndigenousPeoplesDay(targetDate.getFullYear()));
+    const isTuesdayAfterSundayHoliday = isTuesdayAfterSundayHolidayClosure(targetDate);
 
-    for (let i = 0; i < 14; i++) { // Check the next two weeks
-        nextOpenDate = addDays(nextOpenDate, 1);
-        const dayOfWeek = nextOpenDate.getDay();
-        const date = new Date(currentYear, nextOpenDate.getMonth(), nextOpenDate.getDate()); // Normalize to midnight
+    if (isClosedForHoliday(targetDate)) {
+        return null;
+    }
 
-        let isHoliday = holidays.some(holiday => isSameDate(holiday, date));
-        let isMondayAfterSundayHoliday = holidays.some(holiday => {
-            return holiday.getDay() === 0 && isSameDate(addDays(holiday, 1), date);
+    if (dayOfWeek === 1 || dayOfWeek === 4 || isTuesdayAfterIndigenousPeoplesDay || isTuesdayAfterSundayHoliday) {
+        return {
+            openingTime: setTime(targetDate, 8, 0),
+            closingTime: setTime(targetDate, 19, 45)
+        };
+    }
+
+    if (dayOfWeek === 6) {
+        return {
+            openingTime: setTime(targetDate, 8, 0),
+            closingTime: isSpecialHalfDaySaturday(targetDate) ? setTime(targetDate, 12, 0) : setTime(targetDate, 15, 0)
+        };
+    }
+
+    return null;
+}
+
+function isClosedForHoliday(date) {
+    const targetDate = startOfDay(date);
+    const holidays = getHolidaysForYear(targetDate.getFullYear());
+    const isHoliday = holidays.some(holiday => isSameDate(holiday, targetDate));
+    const isMondayAfterSundayHoliday = holidays.some(holiday => holiday.getDay() === 0 && isSameDate(addDays(holiday, 1), targetDate));
+
+    return (isHoliday || isMondayAfterSundayHoliday) && NORMAL_OPERATING_DAYS.includes(targetDate.getDay());
+}
+
+// Function to get the next opening time after the provided date and time.
+function getNextOpenTime(afterDate) {
+    let nextOpenDate = new Date(afterDate);
+
+    for (let i = 0; i < 30; i++) {
+        const dateToCheck = startOfDay(nextOpenDate);
+        const schedule = getScheduleForDate(dateToCheck);
+
+        if (schedule && schedule.openingTime > afterDate) {
+            return schedule.openingTime;
+        }
+
+        nextOpenDate = addDays(dateToCheck, 1);
+    }
+
+    return null;
+}
+
+function getSevenDayOutlook(startDate) {
+    const selectedDate = startOfDay(startDate);
+    const days = [];
+
+    for (let i = 0; i < 7; i++) {
+        const date = addDays(selectedDate, i);
+        const schedule = getScheduleForDate(date);
+
+        days.push({
+            date,
+            isOpen: Boolean(schedule),
+            schedule
         });
-
-        // Check if date is the Tuesday after Indigenous People's Day
-        const indigenousPeoplesDay = getNthWeekdayOfMonth(currentYear, 9, 1, 2);
-        let isTuesdayAfterIndigenousPeoplesDay = isSameDate(addDays(indigenousPeoplesDay, 1), date) && date.getDay() === 2;
-
-        // Skip if date is a holiday on a normal operating day
-        if ((isHoliday || isMondayAfterSundayHoliday) && normalOperatingDays.includes(date.getDay())) {
-            continue; // Closed due to holiday
-        }
-
-        // Determine if the Transfer Station is open on this date
-        if (normalOperatingDays.includes(dayOfWeek) || isTuesdayAfterIndigenousPeoplesDay) {
-            // Set opening time based on the day
-            let openingTime;
-            if (dayOfWeek === 1) { // Monday
-                openingTime = setTime(date, 8, 0);
-            } else if (dayOfWeek === 4) { // Thursday
-                openingTime = setTime(date, 8, 0);
-            } else if (dayOfWeek === 6) { // Saturday
-                openingTime = setTime(date, 8, 0);
-            } else if (isTuesdayAfterIndigenousPeoplesDay) { // Special case for Tuesday after Indigenous People's Day
-                openingTime = setTime(date, 8, 0);
-            } else {
-                continue; // Not an open day
-            }
-            return openingTime;
-        }
     }
-    return null; // Could not find the next opening time in the next two weeks
+
+    return days;
 }
 
-// Helper Functions
+function getHolidaysForYear(year) {
+    return [
+        // New Year's Day
+        new Date(year, 0, 1),
+        // Memorial Day
+        getLastMondayOfMonth(year, 4),
+        // Independence Day
+        new Date(year, 6, 4),
+        // Labor Day
+        getFirstMondayOfMonth(year, 8),
+        // Columbus/Indigenous People Day
+        getIndigenousPeoplesDay(year),
+        // Thanksgiving Day
+        getNthWeekdayOfMonth(year, 10, 4, 4),
+        // Christmas Day
+        new Date(year, 11, 25),
+        // Durham Fair Saturday
+        getLastSaturdayOfMonth(year, 8)
+    ];
+}
 
-// Get the last Monday of a given month
+function getIndigenousPeoplesDay(year) {
+    return getNthWeekdayOfMonth(year, 9, 1, 2);
+}
+
+function isTuesdayAfterHoliday(date, holiday) {
+    return holiday && date.getDay() === 2 && isSameDate(addDays(holiday, 1), date);
+}
+
+function isTuesdayAfterSundayHolidayClosure(date) {
+    const targetDate = startOfDay(date);
+    const holidays = getHolidaysForYear(targetDate.getFullYear());
+
+    return targetDate.getDay() === 2 && holidays.some(holiday => holiday.getDay() === 0 && isSameDate(addDays(holiday, 2), targetDate));
+}
+
+function isSpecialHalfDaySaturday(date) {
+    const targetDate = startOfDay(date);
+    const christmas = new Date(targetDate.getFullYear(), 11, 25);
+    const newYearsDay = new Date(targetDate.getFullYear() + 1, 0, 1);
+
+    return targetDate.getDay() === 6 &&
+           (
+               (christmas.getDay() === 0 && isSameDate(addDays(christmas, -1), targetDate)) ||
+               (newYearsDay.getDay() === 0 && isSameDate(addDays(newYearsDay, -1), targetDate))
+           );
+}
+
+// Helper functions
+
 function getLastMondayOfMonth(year, month) {
-    const date = new Date(year, month + 1, 0); // Last day of the month
-    while (date.getDay() !== 1) { // 1 = Monday
-        date.setDate(date.getDate() - 1);
-    }
-    return date;
+    return getLastWeekdayOfMonth(year, month, 1);
 }
 
-// Get the first Monday of a given month
 function getFirstMondayOfMonth(year, month) {
     const date = new Date(year, month, 1);
     while (date.getDay() !== 1) {
@@ -168,7 +168,18 @@ function getFirstMondayOfMonth(year, month) {
     return date;
 }
 
-// Get the Nth weekday of a given month
+function getLastSaturdayOfMonth(year, month) {
+    return getLastWeekdayOfMonth(year, month, 6);
+}
+
+function getLastWeekdayOfMonth(year, month, weekday) {
+    const date = new Date(year, month + 1, 0);
+    while (date.getDay() !== weekday) {
+        date.setDate(date.getDate() - 1);
+    }
+    return date;
+}
+
 function getNthWeekdayOfMonth(year, month, weekday, n) {
     const date = new Date(year, month, 1);
     let count = 0;
@@ -184,49 +195,144 @@ function getNthWeekdayOfMonth(year, month, weekday, n) {
     return null;
 }
 
-// Check if two dates are the same (year, month, day)
 function isSameDate(date1, date2) {
     return date1.getFullYear() === date2.getFullYear() &&
            date1.getMonth() === date2.getMonth() &&
            date1.getDate() === date2.getDate();
 }
 
-// Add a number of days to a date
+function startOfDay(date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
 function addDays(date, days) {
     const result = new Date(date);
     result.setDate(result.getDate() + days);
     return result;
 }
 
-// Set time for a date
 function setTime(date, hours, minutes) {
     const result = new Date(date);
     result.setHours(hours, minutes, 0, 0);
     return result;
 }
 
-// DOM Manipulation
+function formatDateInputValue(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
+function parseDateInputValue(value) {
+    const parts = value.split("-").map(Number);
+
+    if (parts.length !== 3 || parts.some(Number.isNaN)) {
+        return null;
+    }
+
+    const date = new Date(parts[0], parts[1] - 1, parts[2]);
+
+    if (date.getFullYear() !== parts[0] || date.getMonth() !== parts[1] - 1 || date.getDate() !== parts[2]) {
+        return null;
+    }
+
+    return date;
+}
+
+function formatTimeRange(schedule) {
+    return `${formatTime(schedule.openingTime)}-${formatTime(schedule.closingTime)}`;
+}
+
+function formatTime(date) {
+    return date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit"
+    });
+}
+
+function formatOutlookDate(date) {
+    return date.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric"
+    });
+}
+
+function formatNextOpenDate(date) {
+    return date.toLocaleString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+    });
+}
+
+// DOM manipulation
 document.addEventListener("DOMContentLoaded", function() {
-    const result = isTransferStationOpen();
-    const statusElement = document.getElementById('status');
-    statusElement.innerText = result.status;
+    const dateInput = document.getElementById("status-date");
+    const statusElement = document.getElementById("status");
+    const nextOpenElement = document.getElementById("next-open");
+    const outlookList = document.getElementById("outlook-list");
+    const today = startOfDay(new Date());
+    const todayInputValue = formatDateInputValue(today);
 
-    if (result.status === "YES") {
-        document.body.classList.add('open');
-        document.querySelector('.container').classList.add('open');
-    } else {
-        document.body.classList.add('closed');
-        document.querySelector('.container').classList.add('closed');
+    dateInput.min = todayInputValue;
+    dateInput.value = todayInputValue;
+    dateInput.addEventListener("change", updateStatus);
 
-        // Display next opening time
-        if (result.nextOpen) {
-            const nextOpenElement = document.createElement('div');
-            nextOpenElement.id = 'next-open';
-            const options = { weekday: 'long', hour: 'numeric', minute: 'numeric' };
-            const nextOpenTimeString = result.nextOpen.toLocaleString('en-US', options);
-            nextOpenElement.innerText = `The transfer station will next open on ${nextOpenTimeString}.`;
-            // Append the nextOpenElement after the statusElement
-            statusElement.insertAdjacentElement('afterend', nextOpenElement);
+    updateStatus();
+
+    function updateStatus() {
+        let selectedDate = parseDateInputValue(dateInput.value);
+
+        if (!selectedDate || selectedDate < today) {
+            selectedDate = today;
+            dateInput.value = todayInputValue;
         }
+
+        const result = isTransferStationOpen(selectedDate);
+
+        statusElement.innerText = result.status;
+        updatePageState(result.isOpen);
+        updateNextOpenMessage(result.nextOpen);
+        updateOutlook(selectedDate);
+    }
+
+    function updatePageState(isOpen) {
+        document.body.classList.toggle("open", isOpen);
+        document.body.classList.toggle("closed", !isOpen);
+        document.querySelector(".container").classList.toggle("open", isOpen);
+        document.querySelector(".container").classList.toggle("closed", !isOpen);
+    }
+
+    function updateNextOpenMessage(nextOpen) {
+        if (!nextOpen) {
+            nextOpenElement.innerText = "";
+            nextOpenElement.hidden = true;
+            return;
+        }
+
+        nextOpenElement.hidden = false;
+        nextOpenElement.innerText = `Next open: ${formatNextOpenDate(nextOpen)}.`;
+    }
+
+    function updateOutlook(selectedDate) {
+        outlookList.innerHTML = "";
+
+        getSevenDayOutlook(selectedDate).forEach(day => {
+            const item = document.createElement("li");
+            const dateElement = document.createElement("span");
+            const statusElement = document.createElement("span");
+
+            dateElement.className = "outlook-date";
+            dateElement.innerText = formatOutlookDate(day.date);
+            statusElement.className = day.isOpen ? "outlook-status open-day" : "outlook-status closed-day";
+            statusElement.innerText = day.isOpen ? `Open ${formatTimeRange(day.schedule)}` : "Closed";
+
+            item.append(dateElement, statusElement);
+            outlookList.appendChild(item);
+        });
     }
 });
