@@ -1,10 +1,20 @@
 const NORMAL_OPERATING_DAYS = [1, 4, 6]; // Monday, Thursday, Saturday
 
+// Add temporary, Town-announced changes here. Use YYYY-MM-DD for the date.
+// Set status to "closed" for a closure, or "open" and include hours to add or change an open day.
+const SPECIAL_SCHEDULE_UPDATES = {
+    "2026-07-30": {
+        status: "closed",
+        reason: "Closed for essential repairs."
+    }
+};
+
 // Main function to determine if the Transfer Station is open.
 function isTransferStationOpen(targetDate = new Date(), now = new Date()) {
     const selectedDate = startOfDay(targetDate);
     const today = startOfDay(now);
     const schedule = getScheduleForDate(selectedDate);
+    const specialUpdate = getSpecialScheduleUpdate(selectedDate);
     const isToday = isSameDate(selectedDate, today);
 
     if (!schedule) {
@@ -12,6 +22,7 @@ function isTransferStationOpen(targetDate = new Date(), now = new Date()) {
             status: "NO",
             isOpen: false,
             schedule,
+            specialUpdate,
             nextOpen: getNextOpenTime(isToday ? now : selectedDate)
         };
     }
@@ -20,7 +31,8 @@ function isTransferStationOpen(targetDate = new Date(), now = new Date()) {
         return {
             status: "YES",
             isOpen: true,
-            schedule
+            schedule,
+            specialUpdate
         };
     }
 
@@ -30,15 +42,21 @@ function isTransferStationOpen(targetDate = new Date(), now = new Date()) {
         status: isOpenNow ? "YES" : "NO",
         isOpen: isOpenNow,
         schedule,
+        specialUpdate,
         nextOpen: isOpenNow ? null : getNextOpenTime(now)
     };
 }
 
 function getScheduleForDate(date) {
     const targetDate = startOfDay(date);
+    const specialUpdate = getSpecialScheduleUpdate(targetDate);
     const dayOfWeek = targetDate.getDay();
     const isTuesdayAfterIndigenousPeoplesDay = isTuesdayAfterHoliday(targetDate, getIndigenousPeoplesDay(targetDate.getFullYear()));
     const isTuesdayAfterSundayHoliday = isTuesdayAfterSundayHolidayClosure(targetDate);
+
+    if (specialUpdate) {
+        return specialUpdate.status === "open" ? getScheduleFromSpecialUpdate(targetDate, specialUpdate) : null;
+    }
 
     if (isClosedForHoliday(targetDate)) {
         return null;
@@ -59,6 +77,17 @@ function getScheduleForDate(date) {
     }
 
     return null;
+}
+
+function getSpecialScheduleUpdate(date) {
+    return SPECIAL_SCHEDULE_UPDATES[formatDateInputValue(startOfDay(date))] || null;
+}
+
+function getScheduleFromSpecialUpdate(date, update) {
+    return {
+        openingTime: setTimeFromString(date, update.openingTime),
+        closingTime: setTimeFromString(date, update.closingTime)
+    };
 }
 
 function isClosedForHoliday(date) {
@@ -99,7 +128,8 @@ function getSevenDayOutlook(startDate) {
         days.push({
             date,
             isOpen: Boolean(schedule),
-            schedule
+            schedule,
+            specialUpdate: getSpecialScheduleUpdate(date)
         });
     }
 
@@ -217,6 +247,11 @@ function setTime(date, hours, minutes) {
     return result;
 }
 
+function setTimeFromString(date, time) {
+    const [hours, minutes] = time.split(":").map(Number);
+    return setTime(date, hours, minutes);
+}
+
 function formatDateInputValue(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -273,6 +308,7 @@ function formatNextOpenDate(date) {
 document.addEventListener("DOMContentLoaded", function() {
     const dateInput = document.getElementById("status-date");
     const statusElement = document.getElementById("status");
+    const scheduleNoteElement = document.getElementById("schedule-note");
     const nextOpenElement = document.getElementById("next-open");
     const outlookList = document.getElementById("outlook-list");
     const today = startOfDay(new Date());
@@ -296,8 +332,20 @@ document.addEventListener("DOMContentLoaded", function() {
 
         statusElement.innerText = result.status;
         updatePageState(result.isOpen);
+        updateScheduleNote(result.specialUpdate);
         updateNextOpenMessage(result.nextOpen);
         updateOutlook(selectedDate);
+    }
+
+    function updateScheduleNote(specialUpdate) {
+        if (!specialUpdate) {
+            scheduleNoteElement.hidden = true;
+            scheduleNoteElement.innerText = "";
+            return;
+        }
+
+        scheduleNoteElement.hidden = false;
+        scheduleNoteElement.innerText = `${specialUpdate.reason} Keeping track of one-off schedule changes can be a lot — we have you covered.`;
     }
 
     function updatePageState(isOpen) {
@@ -330,6 +378,10 @@ document.addEventListener("DOMContentLoaded", function() {
             dateElement.innerText = formatOutlookDate(day.date);
             statusElement.className = day.isOpen ? "outlook-status open-day" : "outlook-status closed-day";
             statusElement.innerText = day.isOpen ? `Open ${formatTimeRange(day.schedule)}` : "Closed";
+
+            if (day.specialUpdate) {
+                statusElement.innerText += ` — ${day.specialUpdate.reason}`;
+            }
 
             item.append(dateElement, statusElement);
             outlookList.appendChild(item);

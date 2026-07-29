@@ -73,6 +73,14 @@ body.closed {
     margin: 0.75rem 0;
 }
 
+#schedule-note {
+    max-width: 36rem;
+    margin: 0 1rem 1.25rem;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
 /* Style for #next-open */
 #next-open {
     min-height: 1.25rem;
