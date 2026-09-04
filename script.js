@@ -5,6 +5,8 @@ const NORMAL_OPERATING_DAYS = [1, 4, 6]; // Monday, Thursday, Saturday
 const SPECIAL_SCHEDULE_UPDATES = {
     "2026-09-08": {
         status: "open",
+        openingTime: "08:00",
+        closingTime: "19:45",
         reason: "Open because it's the day after labor day...even though it's usually closed on Tuesdays."
     }
 };
@@ -84,6 +86,13 @@ function getSpecialScheduleUpdate(date) {
 }
 
 function getScheduleFromSpecialUpdate(date, update) {
+    if (!update.openingTime || !update.closingTime) {
+        return {
+            openingTime: setTime(date, 8, 0),
+            closingTime: setTime(date, 19, 45)
+        };
+    }
+
     return {
         openingTime: setTimeFromString(date, update.openingTime),
         closingTime: setTimeFromString(date, update.closingTime)
