@@ -3,9 +3,9 @@ const NORMAL_OPERATING_DAYS = [1, 4, 6]; // Monday, Thursday, Saturday
 // Add temporary, Town-announced changes here. Use YYYY-MM-DD for the date.
 // Set status to "closed" for a closure, or "open" and include hours to add or change an open day.
 const SPECIAL_SCHEDULE_UPDATES = {
-    "2026-07-30": {
-        status: "closed",
-        reason: "Closed for essential repairs."
+    "2026-09-08": {
+        status: "open",
+        reason: "Open because it's the day after labor day...even though it's usually closed on Tuesdays."
     }
 };
 
